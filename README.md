@@ -1,3 +1,7 @@
+
+
+2026-02-10 - The following information is from the original DXSEX project. Once tested and working this will be updated to reflect how to install. 
+
 # dxSex - CC to Sysex Converter for DX7, VolcaFM, Dexed for Akai Force, Raspberry Pi, intel Mac.
 
 ## Download Latest Binaries 0.1.0
