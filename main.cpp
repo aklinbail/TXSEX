@@ -79,7 +79,7 @@ F0h        Exclusive
 0lllllll   lllllll = data (low)
 F7h        End Of Exclusive
 */
-// Source: TX81Z Owner’s Manual PDF, pp.68–69 (Parameter Change Messages section). [1](https://aisaasco-my.sharepoint.com/personal/allan_klinbail_ai-saas_asia/Documents/Microsoft%20Copilot%20Chat%20Files/TX81ZE.pdf)
+// Source: TX81Z Owner’s Manual PDF, pp.68–69 (Parameter Change Messages section). [1](https://usa.yamaha.com/files/download/other_assets/9/316769/TX81ZE.pdf)
 /*
 ============================================================
  TX81Z — PARAMETER TABLES (Pages 71–73)
@@ -260,34 +260,34 @@ struct CC_MAPPING
     int GROUP = 0;
     int PARAMETER = 0;
 };
-
+//note - 4 op synths need value of 12 or 13 for the groups 
 CC_MAPPING MAP[128] = {
-    {SKIP, 0, 0, 127, 0, 0},     // 0
-    {CC, 1, 0, 127, 0, 0},       // 1
+    {SYSEX, 0, 0, 1, 12, 63},    //0  Poly Mono mode 
+    {SYSEX, 1, 0, 48, 12, 62},   // 1 Transpose
     {CC, 2, 0, 127, 0, 0},       // breath
-    {SYSEX, 3, 0, 99, 1, 9},     // 1 LFo SPEED
+    {SYSEX, 3, 0, 99, 12, 54},   // 3 LFO SPEED
     {CC, 4, 0, 127, 0, 0},       // Foot
     {CC, 5, 0, 127, 0, 0},       // Portamento
-    {SYSEX, 6, 0, 99, 1, 10},    // LFO DELAY
+    {SYSEX, 6, 0, 99, 12, 55},   // LFO DELAY
     {CC, 7, 0, 127, 0, 0},       // 7 Volume
-    {SYSEX, 8, 0, 127, 1, 11},   // 8 LFO PMD
-    {SYSEX, 9, 0, 127, 1, 12},   // 9 LFO AMD
-    {CC, 10, 0, 127, 0, 0},      // 10 PAN 
-    {CC, 7, 0, 127, 0, 0},       // 11  Expression routed to Volume
-    {SYSEX, 12, 0, 5, 1, 14},    // 12 LFO WAVE
-    {SKIP, 13, 0, 127, 0, 0},    // 1
-    {SKIP, 14, 0, 127, 0, 0},    // 1
-    {SKIP, 15, 0, 127, 0, 0},    // 1
-    {SKIP, 16, 0, 127, 0, 0},    // 1
-    {SKIP, 17, 0, 127, 0, 0},    // 1
-    {SKIP, 18, 0, 127, 0, 0},    // 1
-    {SKIP, 19, 0, 127, 0, 0},    // 1
-    {SYSEX, 20, 0, 99, 0, 105},  // 20 Att Rate Op1
-    {SYSEX, 21, 0, 99, 0, 84},   // 21 a Rate Op2
-    {SYSEX, 22, 0, 99, 0, 63},   // 22 a Rate Op3
+    {SYSEX, 8, 0, 99, 12, 56},   // 8 LFO PMD
+    {SYSEX, 9, 0, 99, 12, 57},   // 9 LFO AMD
+    {CC, 10, 0, 127, 0, 0},      // 10 PAN
+    {SYSEX, 11, 0, 12, 12, 64},   // 11  Pitch Bend Range
+    {SYSEX, 12, 0, 3, 12, 59},    // 12 LFO WAVE
+    {SYSEX, 13, 0, 1, 12, 58},   // 13 LFO Sync
+    {SYSEX, 14, 0, 7, 12, 60},   // 14 LFO PMS
+    {SYSEX, 15, 0, 3, 12, 61},    // 15 LFO AMS
+    {SYSEX, 16, 0, 1, 12, 65},    // 16 Portamento Mode
+    {SYSEX, 17, 0, 99, 12, 66},   // 17 Portamento Time
+    {SYSEX, 18, 0, 99, 12, 67},    // 18 FC Volume 
+    {SYSEX, 19, 0, 1, 12, 68},    // 19 Sustain
+    {SYSEX, 20, 0, 99, 12, 69},  // 20 Portamento
+    {SYSEX, 21, 0, 99, 0, 84},   // 21 Mod Wheel  Pitch
+    {SYSEX, 22, 0, 99, 0, 63},   // 22 Mod Wheel Amplitude
     {SYSEX, 23, 0, 99, 0, 42},   // 23 a Rate op4
     {SYSEX, 24, 0, 99, 0, 21},   // 24
-    {SYSEX, 25, 0, 99, 0, 0},    //  25 op6
+    {SYSEX, 25, 0, 99, 0, 0},    // 25 op6
     {SYSEX, 26, 0, 99, 0, 106},  // 26 Decay op1
     {SYSEX, 27, 0, 99, 0, 85},   // 27
     {SYSEX, 28, 0, 99, 0, 64},   // 28
@@ -333,7 +333,7 @@ CC_MAPPING MAP[128] = {
     {SKIP, 68, 0, 127, 0, 0},    // 1
     {SKIP, 69, 0, 127, 0, 0},    // 1
     {SKIP, 70, 0, 127, 0, 0},    // 1
-    {CC, 71, 0, 127, 0, 0},      // 1 Resonane For Dexed - not required 
+    {CC, 71, 0, 127, 0, 0},      // 1 Resonane For Dexed -
     {SKIP, 72, 0, 127, 0, 0},    // 1
     {SYSEX, 73, 0, 48, 1, 16},   // Transpose
     {CC, 74, 0, 127, 0, 0},      // Curoff for Dexed Midi Learn - not required 
