@@ -1,3 +1,11 @@
+
 {
-    "cSpell.enabled": true
+"cSpell.enabled": true,
+"terminal.integrated.shell.linux": "/bin/bash",
+"terminal.integrated.cwd": "/workspace",
+"C_Cpp.default.compilerPath": "/usr/bin/arm-linux-gnueabihf-gcc",
+"files.associations": {
+    "*.h": "c",
+    "asoundlib.h": "c"
+    }
 }
