@@ -1,4 +1,9 @@
-# dxSex - CC to Sysex Converter for DX7, VolcaFM, Dexed for Akai Force, Raspberry Pi, intel Mac.
+# TxSex - CC to Sysex Converter for TX81z (DX21,DX27 DX100) for Akai Force, Raspberry Pi, intel Mac.(forked from DXSex)
+
+## Most of the information below has not been updated from the DXSex repository
+I would like to thank Amit Talwar and everyone on the Mockba team to make this possible
+I have also built a podman container for performing the compilation of the binaries. 
+I'm happy to post a separate project or include it as a subfolder here (quadlet configs and the Container itself). Just ping me and let me know
 
 ## Download Latest Binaries 0.1.0
 1. [Akai Force, Akai MPC & Raspberry Pi/Mac](https://mega.nz/file/dtgDAaJQ#YQTccky9V2LtWmvxBexHB7kM2MWfvNehzfd_1xZQDvc)
