@@ -1,0 +1,56 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "1. Compile C++ (MIDI Optimized)",
+            "type": "shell",
+            "command": "arm-linux-gnueabihf-g++",
+            "args": [
+                "-g",
+                "${file}",
+                "-o", "${fileDirname}/${fileBasenameNoExtension}.elf",
+                "-lasound", 
+                "-ludev",
+                "-march=armv7-a+mp+sec+vfpv4",
+                "-mfloat-abi=hard",
+                "-mfpu=vfpv4",
+                "-O2",
+                "-Wall",
+                "-std=c++17" 
+            ],
+            "group": "build",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "2. Strip Binary",
+            "type": "shell",
+            "command": "arm-linux-gnueabihf-strip",
+            "args": [
+                "--strip-unneeded",
+                "${fileDirname}/${fileBasenameNoExtension}.elf"
+            ],
+            "dependsOn": "1. Compile C++ (MIDI Optimized)",
+            "group": "build"
+        },
+        {
+            "label": "3. Deploy to Akai Force",
+            "type": "shell",
+            "command": "scp",
+            "args": [
+                "-o", "StrictHostKeyChecking=no",
+                "${fileDirname}/${fileBasenameNoExtension}.elf",
+                "root@192.168.68.xx:/tmp/" 
+            ],
+            "dependsOn": "2. Strip Binary",
+            "group": "build"
+        },
+        {
+            "label": "FULL C++ BUILD & DEPLOY",
+            "dependsOn": ["3. Deploy to Akai Force"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
