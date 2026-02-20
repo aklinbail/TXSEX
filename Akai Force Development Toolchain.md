@@ -1,66 +1,91 @@
-Akai Force MIDI Development Blueprint
-Target Hardware: Akai Force (Cortex-A17, armv7l, glibc 2.39)
-Host Environment: Fedora 42 (Podman/Quadlet)
-Client Environment: Arch Linux (JetBrains Gateway/Code-OSS)
-1. The Container Recipe (Containerfile)
-   Location: Fedora Host
-   Base: Debian Bookworm (glibc 2.36 - Safe for Force 2.39)
+🎹 Akai Force MIDI Development Infrastructure
+1. The Image Recipe (Containerfile)
+   Location: Fedora Host (~/akai-build/Containerfile)
+   This builds the Debian Bookworm environment with all discovered MIDI (asound), UI (ncurses), and IDE (JetBrains) dependencies.
    dockerfile
-   FROM docker.io/library/debian:bookworm-slim
+# Lock to Debian Bookworm (Stable) for glibc 2.36 compatibility
+FROM docker.io/library/debian:bookworm-slim
 
+# 1. Enable armhf architecture and install ALL dependencies
 RUN dpkg --add-architecture armhf && \
 apt-get update && apt-get install -y --no-install-recommends \
+# The Cross-Compiler & MIDI/UI Libs (armhf)
 crossbuild-essential-armhf \
 libasound2-dev:armhf \
 libncurses5-dev:armhf \
 libncursesw5-dev:armhf \
 libudev-dev:armhf \
+# Build & IDE Support (Procps/Python are required by JetBrains)
 clangd bear cmake git pkg-config procps python3 \
+# GUI Libraries (Required for the Headless IDE JRE to boot)
 libxtst6 libxrender1 libfontconfig1 libxi6 libgtk-3-0 \
-openssh-server ca-certificates wget && \
+# Infrastructure
+openssh-server ca-certificates wget zip && \
 rm -rf /var/lib/apt/lists/*
 
+# 2. SSH Configuration (Fixed for Key-only access from Arch)
 RUN mkdir -p /root/.ssh /var/run/sshd && \
 chmod 700 /root /root/.ssh && \
 ssh-keygen -A && \
 sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
 echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
 
+# 3. Akai Force Environment Variables (Cortex-A17)
 ENV CC=arm-linux-gnueabihf-gcc
 ENV CXX=arm-linux-gnueabihf-g++
 ENV STRIP=arm-linux-gnueabihf-strip
-ENV PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig
 
 WORKDIR /workspace
 EXPOSE 22
 CMD ["/usr/sbin/sshd", "-D"]
 Use code with caution.
 
-2. Podman Quadlet Configs
+2. Fedora Quadlets (Split Pod/Container)
    Location: Fedora Host (~/.config/containers/systemd/)
    akai-compilation.pod
    ini
-   [Pod]
-   PodName=akai-compilation-pod
-   PublishPort=2022:22
-   Use code with caution.
+   [Unit]
+   Description=Akai Force Development Pod
+
+[Pod]
+PodName=akai-compilation-pod
+# Publish the SSH port (2022) to the Fedora host
+PublishPort=2022:22
+
+[Install]
+WantedBy=default.target
+Use code with caution.
 
 akai-compilation.container
 ini
 [Unit]
-Description=Akai Force Toolchain
+Description=Akai Force txSex Toolchain Container
 After=akai-compilation-pod.service
 
 [Container]
 ContainerName=akai-toolchain
-Image=akai-force-final-v1
-Pod=akai-compilation-pod.service
-Volume=%h/path/to/project:/workspace:Z
+Image=akai-force-toolchain:v1
+Pod=akai-compilation.pod
+
+# Persistent Code Mount
+Volume=%h/workspace/TXSEX:/workspace:Z
+
+# Host SSH Keys for Arch Handshake
 Volume=%h/.config/akai-ssh/authorized_keys:/root/.ssh/authorized_keys:Z
+
+# Persistent JetBrains IDE Cache (Preserves CLion backend/settings)
+Volume=akai-jetbrains-cache:/root/.cache/JetBrains
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
 Use code with caution.
 
-3. Client SSH Config (~/.ssh/config)
+3. Arch Linux Client Config (~/.ssh/config)
    Location: Arch Laptop
+   Note: Use IdentitiesOnly yes to prevent "Too many authentication failures" when you have multiple keys.
    text
    Host akai-build
    HostName 192.168.68.59
@@ -68,67 +93,38 @@ Use code with caution.
    Port 2022
    IdentityFile ~/.ssh/id_ed25519
    ForwardAgent yes
-   UserKnownHostsFile ~/.ssh/known_hosts_akai
+   IdentitiesOnly yes
    StrictHostKeyChecking no
-   Use code with caution.
+   UserKnownHostsFile /dev/null
 
-4. CMake Toolchain (force.cmake)
-   Location: Project Root (/workspace/TXSEX/)
-   cmake
-   set(CMAKE_SYSTEM_NAME Linux)
-   set(CMAKE_SYSTEM_PROCESSOR arm)
-   set(CMAKE_C_COMPILER /usr/bin/arm-linux-gnueabihf-gcc)
-   set(CMAKE_CXX_COMPILER /usr/bin/arm-linux-gnueabihf-g++)
-
-# Force success for cross-compilation identification
-set(CMAKE_C_COMPILER_WORKS 1)
-set(CMAKE_CXX_COMPILER_WORKS 1)
-
-# Optimizations for Akai Force Hardware
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=armv7-a -mfloat-abi=hard -mfpu=vfpv4 -O3 -fPIC")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a -mfloat-abi=hard -mfpu=vfpv4 -O3 -fPIC")
-
-include_directories(/usr/include/arm-linux-gnueabihf)
-link_directories(/usr/lib/arm-linux-gnueabihf)
+Host akai-force
+HostName 192.168.68.xx
+User root
+IdentityFile ~/.ssh/id_ed25519
+IdentitiesOnly yes
+ForwardAgent yes
+StrictHostKeyChecking no
+UserKnownHostsFile /dev/null
 Use code with caution.
 
-5. Main Build Logic (CMakeLists.txt)
-   Location: Project Root
+4. Setup & Maintenance Instructions
+   A. Build the Environment (Fedora Host)
+   Run these commands to initialize the infrastructure:
+   Build Image: podman build -t akai-force-toolchain:v1 ~/akai-build/
+   Apply Quadlets: systemctl --user daemon-reload
+   Start Services: systemctl --user start akai-compilation.service
+   B. Connect from Arch (First Time)
+   Start Agent: eval $(ssh-agent -s) && ssh-add ~/.ssh/id_ed25519
+   Import Env (GUI Support): systemctl --user import-environment SSH_AUTH_SOCK
+   Launch IDE: Open JetBrains Gateway, connect to akai-build, and point to /workspace.
+   C. The "txSex" CMake Fixes
+   Ensure your CMakeLists.txt links the libraries discovered in the original shell script:
    cmake
-   cmake_minimum_required(VERSION 3.10)
-   project(TXSEX CXX)
-
-add_definitions(-D__LINUX_ALSA__)
-file(GLOB SOURCES "*.cpp")
-add_executable(txsex_force ${SOURCES})
-
+# Add to CMakeLists.txt
 target_link_libraries(txsex_force asound ncurses m dl pthread)
 
-# Automatic Post-Build Strip
-add_custom_command(TARGET txsex_force POST_BUILD
-COMMAND arm-linux-gnueabihf-strip --strip-unneeded $<TARGET_FILE:txsex_force>
-COMMENT "Stripping binary for Akai Force..."
-)
+# Add the 30ms TX81z safety gate to your onMIDI() function as discussed.
 Use code with caution.
 
-6. Akai Force Persistence (boot.sh)
-   Location: Mockba SD Card Root
-   bash
-   #!/bin/bash
-# Mount RAM disk over read-only SSH folder
-mount -t tmpfs -o size=1m tmpfs /root/.ssh
-mkdir -p /root/.ssh
-chmod 700 /root/.ssh
-
-# Sync keys from persistent SD card
-if [ -f /media/662522/authorized_keys ]; then
-cp /media/662522/authorized_keys /root/.ssh/authorized_keys
-chmod 600 /root/.ssh/authorized_keys
-fi
-Use code with caution.
-
-Key Commands for the Workflow:
-Build Container: podman build -t akai-force-final-v1 .
-Refresh Quadlet: systemctl --user daemon-reload && systemctl --user restart akai-compilation.service
-Verify Binary: file cmake-build-debug-system/txsex_force
-Manual Deploy: scp -P 2022 akai-build:/workspace/TXSEX/cmake-build-debug-system/txsex_force root@192.168.68.xx:/tmp/
+D. Persistence on the Force (Mockba Build)
+Since the Force root is read-only, ensure your boot.sh on the SD card mounts a RAM-disk over /root/.ssh to keep your authorized keys working across reboots.
