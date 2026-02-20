@@ -474,26 +474,40 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void onMIDI(double deltatime, std::vector<unsigned char> *message, void * /*userData*/)
+void onMIDI(double deltatime, std::vector<unsigned char> *message, void * /*userData*/) // handles incomind midi
 {
-    static auto lastSysexTime = std::chrono::steady_clock::now();
-    auto now = std::chrono::steady_clock::now();
 
-    // ... (Your existing status/type checks) ...
-
-    if (C.TYPE == SYSEX)
+    unsigned char byte0 = (int)message->at(0);
+    unsigned char typ = byte0 & 0xF0;
+    unsigned char ch = byte0 & 0x0F;
+    uint size = message->size();
+    if (size == 1 || byte0 == 0xF0 || typ != 0xB0) // sysex or clock or non cc
     {
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSysexTime).count();
-
-        if (elapsed >= 30) // Only send if the "window" is open
+        sendMessage(message);
+    }
+    else
+    {
+        int mCC = (int)message->at(1);
+        CC_MAPPING C = MAP[mCC];
+        // cout << "MAP: " << C.TYPE << " Param: " << C.PARAMETER << endl;
+        if (C.TYPE == CC || C.TYPE == SYSTEM)
         {
-            // ... (Your translation logic) ...
-
-            sendMessage(&oSYX);
-            lastSysexTime = now; // Reset the window
+            // cout << "CC: " << mCC << endl;
+            message->at(1) = C.CC; // remap incoming CC to target CC as in MAP.
+            sendMessage(message);
+            return;
         }
-        // else: DO NOTHING. Just exit the function.
-        // This "thins" the data without pausing the CPU.
+        if (C.TYPE == SYSEX)
+        {
+
+            vector<unsigned char> oSYX = BASE_SYX;
+            int value = limit(message->at(2), C.MIN, C.MAX);
+            oSYX.at(BPOS::GROUP) = C.GROUP;
+            oSYX.at(BPOS::PARAMETER) = C.PARAMETER;
+            oSYX.at(BPOS::DATA) = value;
+            // cout << "CC for Syx: " << mCC << " Value: " << value << endl;
+            sendMessage(&oSYX);
+        }
     }
 }
 
