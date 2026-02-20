@@ -2,9 +2,9 @@
 DX7 CC to Sysex Translator for Akai Force/Raspberry PI
 Author: Amit Talwar https://www.amitszone.com
 Github: https://github.com/intelliriffer
-***************************************************************** */
+*****************************************************************
 
-/*
+
 SYSTEM EXCLUSIVE DATA FORMAT
 The TX81Z has three types of System Exclusive message; Parameter Change messages, Bulk Data messages and
 Dump Request messages.
@@ -79,8 +79,8 @@ F0h        Exclusive
 0lllllll   lllllll = data (low)
 F7h        End Of Exclusive
 */
-// Source: TX81Z Owner’s Manual PDF, pp.68–69 (Parameter Change Messages section). [1](https://usa.yamaha.com/files/download/other_assets/9/316769/TX81ZE.pdf)
-/*
+/* Source: TX81Z Owner’s Manual PDF, pp.68–69 (Parameter Change Messages section). [1](https://usa.yamaha.com/files/download/other_assets/9/316769/TX81ZE.pdf)
+
 ============================================================
  TX81Z — PARAMETER TABLES (Pages 71–73)
  Source: Yamaha TX81Z Owner’s Manual PDF
