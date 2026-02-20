@@ -474,55 +474,26 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void onMIDI(double deltatime, std::vector<unsigned char> *message, void * /*userData*/) // handles incoming midi
+void onMIDI(double deltatime, std::vector<unsigned char> *message, void * /*userData*/)
 {
-    // 1. SETUP TIMERS (Static so they persist between MIDI events)
     static auto lastSysexTime = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
 
-    unsigned char byte0 = (int)message->at(0);
-    unsigned char typ = byte0 & 0xF0;
-    unsigned char ch = byte0 & 0x0F;
-    uint size = message->size();
+    // ... (Your existing status/type checks) ...
 
-    // PASS-THROUGH: Sysex, Clock, Notes, etc. (Send these INSTANTLY)
-    if (size == 1 || byte0 == 0xF0 || typ != 0xB0)
+    if (C.TYPE == SYSEX)
     {
-        sendMessage(message);
-    }
-    else
-    {
-        int mCC = (int)message->at(1);
-        CC_MAPPING C = MAP[mCC];
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSysexTime).count();
 
-        if (C.TYPE == CC || C.TYPE == SYSTEM)
+        if (elapsed >= 30) // Only send if the "window" is open
         {
-            message->at(1) = C.CC;
-            sendMessage(message);
-            return;
+            // ... (Your translation logic) ...
+
+            sendMessage(&oSYX);
+            lastSysexTime = now; // Reset the window
         }
-
-        // --- THE TX81Z SAFETY GATE ---
-        if (C.TYPE == SYSEX)
-        {
-            // Only proceed if 30ms has passed since the last SysEx message
-            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSysexTime).count();
-
-            if (elapsed >= 30)
-            {
-                vector<unsigned char> oSYX = BASE_SYX;
-                int value = limit(message->at(2), C.MIN, C.MAX);
-                oSYX.at(BPOS::GROUP) = C.GROUP;
-                oSYX.at(BPOS::PARAMETER) = C.PARAMETER;
-                oSYX.at(BPOS::DATA) = value;
-
-                sendMessage(&oSYX);
-
-                // Update the timer only when we actually send a SysEx packet
-                lastSysexTime = now;
-            }
-            // If elapsed < 30, we simply "drop" this high-speed move to protect the TX81z buffer
-        }
+        // else: DO NOTHING. Just exit the function.
+        // This "thins" the data without pausing the CPU.
     }
 }
 
