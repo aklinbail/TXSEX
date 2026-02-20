@@ -474,14 +474,19 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void onMIDI(double deltatime, std::vector<unsigned char> *message, void * /*userData*/) // handles incomind midi
+void onMIDI(double deltatime, std::vector<unsigned char> *message, void * /*userData*/) // handles incoming midi
 {
+    // 1. SETUP TIMERS (Static so they persist between MIDI events)
+    static auto lastSysexTime = std::chrono::steady_clock::now();
+    auto now = std::chrono::steady_clock::now();
 
     unsigned char byte0 = (int)message->at(0);
     unsigned char typ = byte0 & 0xF0;
     unsigned char ch = byte0 & 0x0F;
     uint size = message->size();
-    if (size == 1 || byte0 == 0xF0 || typ != 0xB0) // sysex or clock or non cc
+
+    // PASS-THROUGH: Sysex, Clock, Notes, etc. (Send these INSTANTLY)
+    if (size == 1 || byte0 == 0xF0 || typ != 0xB0)
     {
         sendMessage(message);
     }
@@ -489,24 +494,34 @@ void onMIDI(double deltatime, std::vector<unsigned char> *message, void * /*user
     {
         int mCC = (int)message->at(1);
         CC_MAPPING C = MAP[mCC];
-        // cout << "MAP: " << C.TYPE << " Param: " << C.PARAMETER << endl;
+
         if (C.TYPE == CC || C.TYPE == SYSTEM)
         {
-            // cout << "CC: " << mCC << endl;
-            message->at(1) = C.CC; // remap incoming CC to target CC as in MAP.
+            message->at(1) = C.CC;
             sendMessage(message);
             return;
         }
+
+        // --- THE TX81Z SAFETY GATE ---
         if (C.TYPE == SYSEX)
         {
+            // Only proceed if 30ms has passed since the last SysEx message
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSysexTime).count();
 
-            vector<unsigned char> oSYX = BASE_SYX;
-            int value = limit(message->at(2), C.MIN, C.MAX);
-            oSYX.at(BPOS::GROUP) = C.GROUP;
-            oSYX.at(BPOS::PARAMETER) = C.PARAMETER;
-            oSYX.at(BPOS::DATA) = value;
-            // cout << "CC for Syx: " << mCC << " Value: " << value << endl;
-            sendMessage(&oSYX);
+            if (elapsed >= 30)
+            {
+                vector<unsigned char> oSYX = BASE_SYX;
+                int value = limit(message->at(2), C.MIN, C.MAX);
+                oSYX.at(BPOS::GROUP) = C.GROUP;
+                oSYX.at(BPOS::PARAMETER) = C.PARAMETER;
+                oSYX.at(BPOS::DATA) = value;
+
+                sendMessage(&oSYX);
+
+                // Update the timer only when we actually send a SysEx packet
+                lastSysexTime = now;
+            }
+            // If elapsed < 30, we simply "drop" this high-speed move to protect the TX81z buffer
         }
     }
 }
