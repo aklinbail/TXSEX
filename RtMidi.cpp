@@ -1562,7 +1562,19 @@ static void *alsaMidiHandler( void *ptr )
       continue;
     }
     else if ( result <= 0 ) {
-      std::cerr << "\nMidiInAlsa::alsaMidiHandler: unknown MIDI input error!\n";
+      if (result == -EAGAIN || result == -ENOENT || result == -EIO) {
+        // Transient/non-fatal errors: no data or minor I/O issue, silently continue
+        continue;
+      }
+      // Temporary logging to identify the exact result value
+      static bool logged = false;  // Log only once to avoid spam
+      if (!logged) {
+        std::cerr << "\nMidiInAlsa::alsaMidiHandler: Logging unknown result once: " << result << "\n";
+        perror("System reports (once)");
+        logged = true;
+      }
+      // Still print the full error for now, but we'll suppress based on the logged value
+      std::cerr << "\nMidiInAlsa::alsaMidiHandler: unknown MIDI input error! Result: " << result << "\n";
       perror("System reports");
       continue;
     }

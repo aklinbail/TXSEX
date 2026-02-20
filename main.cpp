@@ -397,32 +397,25 @@ RtMidiIn *midiIn = 0;
 RtMidiOut *SYX = 0;
 RtMidiOut *HWOUT = 0;
 
+
 int main(int argc, char *argv[])
 {
     midiIn = new RtMidiIn();
     midiIn->setCallback(&onMIDI);
-    midiIn->ignoreTypes(false, false, true); // dont ignore clocK
+    midiIn->ignoreTypes(false, false, true); // dont ignore clock
     SYX = new RtMidiOut();
     HWOUT = new RtMidiOut();
     signal(SIGINT, signalHandler);
 
-    if (argc > 1)
-    {
+    if (argc > 1) {
         string cmd(argv[1]);
         cout << "Command: " << cmd << endl;
         if (cmd == "-ports")
         {
             listOutPorts();
-            cout << endl
-                 << endl;
-            //     listInports();
+            cout << endl << endl;
             cleanup();
         }
-        /*  if (cmd == "-print")
-          {
-
-              cleanup();
-          }*/
         if (cmd == "-p")
         {
             if (argc < 3)
@@ -434,46 +427,34 @@ int main(int argc, char *argv[])
             initHWPORT();
         }
     }
-
     if (oPORTNAME == "")
     {
         SYX->openVirtualPort(PORT_PREFIX + "SYX");
         cout << "dxsex => Created Virtual Output Port: " << PORT_PREFIX << "SYX" << endl;
     }
     midiIn->openVirtualPort(PORT_PREFIX + "CC");
-    cout << "dxsex => Created Virtual Input Port: " << PORT_PREFIX << "CC" << endl;
+    cout << "dxsex => Created Virtual Input Port: " << PORT_PREFIX + "CC" << endl;
     cout << "Send Your CC Commands to PORT: " << PORT_PREFIX << "CC" << endl;
 
-    while (true) // the main loop
+    while (true)
     {
-
         if (oPORTNAME != "")
         {
             long elapsed = getSecs() - nextCheck;
-            if (elapsed >= 2)
+            if (elapsed >= 30)  // Check every 30 seconds (not 2)
             {
-                int pid = getOutPort(oPORTNAME);
-                if (pid == -1)
+                // Only reopen if port was disconnected—don't scan repeatedly
+                if (HW_EXISTS == false)
                 {
-                    HW_EXISTS = false;
+                    initHWPORT();  // Attempt reconnect
                 }
-                else
-                {
-                    if (HW_EXISTS == false)
-                    {
-                        initHWPORT();
-                    }
-                }
-                nextCheck = getSecs() + 2;
+                nextCheck = getSecs() + 30;
             }
         }
 
-        usleep(5000);
+        usleep(100000);  // 100ms
     }
-    cleanup();
-    return 0;
 }
-
 void onMIDI(double deltatime, std::vector<unsigned char> *message, void * /*userData*/) // handles incomind midi
 {
 
