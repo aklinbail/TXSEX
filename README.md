@@ -1,4 +1,9 @@
+2026-02-21 
+No longer developing on this project. I'm starting again to work from DXSEX_MOCKBA3_6 as the base
 
+I'm keeping this repo around for reference to the TX-81z mappings that are still in relevant.
+
+This version builds, but it makes the Force run very poorly. 
 
 2026-02-10 - The following information is from the original DXSEX project. Once tested and working this will be updated to reflect how to install. 
 

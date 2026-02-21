@@ -28,7 +28,7 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6eebb191-9e62-4cae-948d-cbdeae8ed31c" name="Changes" comment="updated files from 3_6 version">
+    <list default="true" id="6eebb191-9e62-4cae-948d-cbdeae8ed31c" name="Changes" comment="rollback">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -297,7 +297,7 @@
       <workItem from="1771571022675" duration="304000" />
       <workItem from="1771571357893" duration="14838000" />
       <workItem from="1771599627066" duration="2314000" />
-      <workItem from="1771605891683" duration="1682000" />
+      <workItem from="1771605891683" duration="3171000" />
     </task>
     <task id="LOCAL-00001" summary="full toolchain build. Switch to Jetbrains">
       <option name="closed" value="true" />
@@ -395,7 +395,15 @@
       <option name="project" value="LOCAL" />
       <updated>1771605829126</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="rollback">
+      <option name="closed" value="true" />
+      <created>1771658936160</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1771658936160</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -430,7 +438,8 @@
     <MESSAGE value="just snapshot current state before merge Amit's new 3-6 version" />
     <MESSAGE value="including some untracked files" />
     <MESSAGE value="updated files from 3_6 version" />
-    <option name="LAST_COMMIT_MESSAGE" value="updated files from 3_6 version" />
+    <MESSAGE value="rollback" />
+    <option name="LAST_COMMIT_MESSAGE" value="rollback" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
