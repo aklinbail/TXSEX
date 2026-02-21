@@ -398,28 +398,28 @@ RtMidiOut *SYX = 0;
 RtMidiOut *HWOUT = 0;
 
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     midiIn = new RtMidiIn();
     midiIn->setCallback(&onMIDI);
-    midiIn->ignoreTypes(false, false, true); // dont ignore clocK
+    midiIn->ignoreTypes(false, false, true); // dont ignore clock
     SYX = new RtMidiOut();
     HWOUT = new RtMidiOut();
     signal(SIGINT, signalHandler);
-    //
+
     if (argc > 1) {
         string cmd(argv[1]);
         cout << "Command: " << cmd << endl;
-        if (cmd == "-ports") {
+        if (cmd == "-ports")
+        {
             listOutPorts();
-            cout << endl
-                 << endl;
-            //     listInports();
+            cout << endl << endl;
             cleanup();
         }
-
-        if (cmd == "-p") {
-            if (argc < 3) {
+        if (cmd == "-p")
+        {
+            if (argc < 3)
+            {
                 cout << "Error ! Please Provide Midi Port Name to bind to!" << endl;
                 cleanup();
             }
@@ -427,42 +427,36 @@ int main(int argc, char* argv[])
             initHWPORT();
         }
     }
-
-    if (oPORTNAME == "") {
+    if (oPORTNAME == "")
+    {
         SYX->openVirtualPort(PORT_PREFIX + "SYX");
         cout << "dxsex => Created Virtual Output Port: " << PORT_PREFIX << "SYX" << endl;
     }
     midiIn->openVirtualPort(PORT_PREFIX + "CC");
-    cout << "dxsex => Created Virtual Input Port: " << PORT_PREFIX << "CC" << endl;
+    cout << "dxsex => Created Virtual Input Port: " << PORT_PREFIX + "CC" << endl;
     cout << "Send Your CC Commands to PORT: " << PORT_PREFIX << "CC" << endl;
-    updateAlgos(0);
-    while (true) // the main loop
-    {
 
-        if (oPORTNAME != "") {
+    while (true)
+    {
+        if (oPORTNAME != "")
+        {
             long elapsed = getSecs() - nextCheck;
-            if (elapsed >= 2) {
-                int pid = getOutPort(oPORTNAME);
-                if (pid == -1) {
-                    HW_EXISTS = false;
-                } else {
-                    if (HW_EXISTS == false) {
-                        initHWPORT();
-                    }
+            if (elapsed >= 30)  // Check every 30 seconds (not 2)
+            {
+                // Only reopen if port was disconnected—don't scan repeatedly
+                if (HW_EXISTS == false)
+                {
+                    initHWPORT();  // Attempt reconnect
                 }
-                nextCheck = getSecs() + 2;
+                nextCheck = getSecs() + 30;
             }
         }
 
-        usleep(5000);
+        usleep(100000);  // 100ms
     }
-    cleanup();
-    return 0;
 }
-
-void onMIDI(double deltatime, std::vector<unsigned char>* message, void* /*userData*/) // handles incomind midi
+void onMIDI(double deltatime, std::vector<unsigned char> *message, void * /*userData*/) // handles incomind midi
 {
-    // cout << "MIDI MESSAGE" << endl;
 
     unsigned char byte0 = (int)message->at(0);
     unsigned char typ = byte0 & 0xF0;
@@ -471,69 +465,29 @@ void onMIDI(double deltatime, std::vector<unsigned char>* message, void* /*userD
     if (size == 1 || byte0 == 0xF0 || typ != 0xB0) // sysex or clock or non cc
     {
         sendMessage(message);
-    } else {
+    }
+    else
+    {
         int mCC = (int)message->at(1);
         CC_MAPPING C = MAP[mCC];
-
-        //  cout << "MAP: " << C.TYPE << " Param: " << C.PARAMETER << endl;
-        if (C.TYPE == CC || C.TYPE == SYSTEM) {
+        // cout << "MAP: " << C.TYPE << " Param: " << C.PARAMETER << endl;
+        if (C.TYPE == CC || C.TYPE == SYSTEM)
+        {
             // cout << "CC: " << mCC << endl;
             message->at(1) = C.CC; // remap incoming CC to target CC as in MAP.
             sendMessage(message);
             return;
         }
-        if (C.TYPE == SYSEX) {
-            int value = limit(message->at(2), C.MIN, C.MAX);
-            if (C.CC == 76) { // we have algorithm update
-                updateAlgos(value);
-            }
+        if (C.TYPE == SYSEX)
+        {
 
             vector<unsigned char> oSYX = BASE_SYX;
-
+            int value = limit(message->at(2), C.MIN, C.MAX);
             oSYX.at(BPOS::GROUP) = C.GROUP;
             oSYX.at(BPOS::PARAMETER) = C.PARAMETER;
             oSYX.at(BPOS::DATA) = value;
             // cout << "CC for Syx: " << mCC << " Value: " << value << endl;
             sendMessage(&oSYX);
-        }
-        if (C.TYPE == MACRO) {
-            ENVS ENV;
-            switch (C.PARAMETER) {
-            case 0:
-                ENV = ATTACK;
-                break;
-            case 1:
-                ENV = DECAY;
-                break;
-            case 2:
-                ENV = SUSTAIN;
-                break;
-            case 3:
-                ENV = RELEASE;
-                break;
-            }
-            vector<int> params;
-            switch (C.GROUP) {
-            case 0:
-                params = ENV.CARRIERS;
-                break;
-            case 1:
-                params = ENV.MODULATORS;
-                break;
-            case 2:
-                params = ENV.LCARRIERS;
-                break;
-            case 3:
-                params = ENV.LMODULATORS;
-                break;
-            }
-
-            for (size_t i = 0; i != params.size(); i++) {
-                //  cout << "Macro: item " << params.at(i) << endl;
-                vector<unsigned char>* mmessage = message;
-                mmessage->at(1) = (unsigned char)params.at(i);
-                onMIDI(deltatime, mmessage, 0);
-            }
         }
     }
 }
@@ -551,7 +505,8 @@ void listInports()
 {
     uint nPorts = midiIn->getPortCount();
     cout << "************ INPUTS ************" << endl;
-    for (uint i = 0; i < nPorts; i++) {
+    for (uint i = 0; i < nPorts; i++)
+    {
         std::string portName = midiIn->getPortName(i);
         std::cout << portName << "\n";
     }
@@ -560,7 +515,8 @@ void listOutPorts()
 {
     uint nPorts = SYX->getPortCount();
     cout << "************ Midi Outputs ************" << endl;
-    for (uint i = 0; i < nPorts; i++) {
+    for (uint i = 0; i < nPorts; i++)
+    {
         std::string portName = SYX->getPortName(i);
         std::cout << portName << "\n";
     }
@@ -577,10 +533,12 @@ void cleanup()
 int getinPort(std::string str)
 {
     int nPorts = midiIn->getPortCount();
-    for (int i = 0; i < nPorts; i++) {
+    for (int i = 0; i < nPorts; i++)
+    {
         std::string portName = midiIn->getPortName(i);
         size_t found = portName.find(str);
-        if (found != string::npos) {
+        if (found != string::npos)
+        {
             return i;
         }
     }
@@ -589,10 +547,12 @@ int getinPort(std::string str)
 int getOutPort(std::string str)
 {
     int nPorts = SYX->getPortCount();
-    for (int i = 0; i < nPorts; i++) {
+    for (int i = 0; i < nPorts; i++)
+    {
         std::string portName = SYX->getPortName(i);
         size_t found = portName.find(str);
-        if (found != string::npos) {
+        if (found != string::npos)
+        {
             return i;
         }
     }
@@ -601,32 +561,43 @@ int getOutPort(std::string str)
 void initHWPORT()
 {
     int oid = getOutPort(oPORTNAME);
-    if (oid != -1) {
-        if (HWOUT->isPortOpen()) {
+    if (oid != -1)
+    {
+        if (HWOUT->isPortOpen())
+        {
             HWOUT->closePort();
         }
-        try {
+        try
+        {
             HWOUT->openPort((unsigned int)oid, PORT_PREFIX + "SYX");
             HW_EXISTS = true;
             cout << "Opened HW Port (" << SYX->getPortName(oid) << " as " << PORT_PREFIX << "SYX) for Output with ID: " << oid << endl;
-        } catch (...) {
+        }
+        catch (...)
+        {
             HW_EXISTS = false;
             cout << "Error Opening: " << SYX->getPortName(oid) << "for Output" << endl;
         }
-    } else {
+    }
+    else
+    {
         HW_EXISTS = false;
         cout << oPORTNAME << "Not Available Yet" << endl;
     }
 }
-void sendMessage(vector<unsigned char>* message)
+void sendMessage(vector<unsigned char> *message)
 {
     if (oPORTNAME == "")
         SYX->sendMessage(message);
-    else {
+    else
+    {
 
-        try {
+        try
+        {
             HWOUT->sendMessage(message);
-        } catch (...) {
+        }
+        catch (...)
+        {
             cout << "Error Sendind Midi to: " << oPORTNAME << endl;
         }
     }
@@ -642,64 +613,4 @@ void signalHandler(int signum)
     cout << "Interrupt signal (" << signum << ") received.\n";
     cout << "Process dxsex Terminiated!" << endl;
     cleanup();
-}
-void updateAlgos(int algo)
-{
-    ATTACK.CARRIERS.clear();
-    DECAY.CARRIERS.clear();
-    SUSTAIN.CARRIERS.clear();
-    RELEASE.CARRIERS.clear();
-    ATTACK.MODULATORS.clear();
-    DECAY.MODULATORS.clear();
-    SUSTAIN.MODULATORS.clear();
-    RELEASE.MODULATORS.clear();
-    ATTACK.LCARRIERS.clear();
-    DECAY.LCARRIERS.clear();
-    SUSTAIN.LCARRIERS.clear();
-    RELEASE.LCARRIERS.clear();
-    ATTACK.LMODULATORS.clear();
-    DECAY.LMODULATORS.clear();
-    SUSTAIN.LMODULATORS.clear();
-    RELEASE.LMODULATORS.clear();
-    struct
-    {
-        int ATTACK = 20;
-        int DECAY = 26;
-        int SUSTAIN = 32;
-        int RELEASE = 38;
-        int lATTACK = 78; // levels
-        int lDECAY = 79;
-        int lSUSTAIN = 80;
-        int lRELEASE = 81;
-
-    } index;
-    for (int i = 1; i <= 6; i++) {
-        if (isSet(ALGOS[algo], i)) {
-            ATTACK.CARRIERS.push_back(index.ATTACK + i - 1);
-            DECAY.CARRIERS.push_back(index.DECAY + (i - 1));
-            SUSTAIN.CARRIERS.push_back(index.SUSTAIN + (i - 1));
-            RELEASE.CARRIERS.push_back(index.RELEASE + i - 1);
-
-            ATTACK.LCARRIERS.push_back(index.lATTACK + ((i - 1) * 4));
-            DECAY.LCARRIERS.push_back(index.lDECAY + ((i - 1) * 4));
-            SUSTAIN.LCARRIERS.push_back(index.lSUSTAIN + ((i - 1) * 4));
-            RELEASE.LCARRIERS.push_back(index.lRELEASE + ((i - 1) * 4));
-        } else {
-            ATTACK.MODULATORS.push_back(index.ATTACK + i - 1);
-            DECAY.MODULATORS.push_back(index.lDECAY + ((i - 1) * 4));
-            SUSTAIN.MODULATORS.push_back(index.lSUSTAIN + ((i - 1) * 4));
-            RELEASE.MODULATORS.push_back(index.RELEASE + i - 1);
-            ATTACK.LMODULATORS.push_back(index.lATTACK + ((i - 1) * 4));
-            DECAY.LMODULATORS.push_back(index.lDECAY + ((i - 1) * 4));
-            SUSTAIN.LMODULATORS.push_back(index.lSUSTAIN + ((i - 1) * 4));
-            RELEASE.LMODULATORS.push_back(index.lRELEASE + ((i - 1) * 4));
-        }
-    }
-    // std::cout << "dxSex Algos Updated" << endl;
-}
-
-bool isSet(int n, int k)
-{
-
-    return ((n & (1 << (k - 1))) > 0);
 }
